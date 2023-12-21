@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block content %}
+{% load static %}
+
+<style>
+/* Custom CSS for the search bar */
+.input-group {
+    margin-bottom: 20px;
+}
+
+.form-control {
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+    padding: 10px;
+}
+
+.btn-primary {
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 10px 20px;
+}
+
+/* Bold text */
+.display-4,
+.form-control,
+.btn-primary {
+    font-weight: bold;
+}
+    
+.star {
+    color: gold;
+}
+    
+.icon {
+        font-size: 1.2em;
+        margin-right: 5px;
+}
+</style>
+
+<div class="container" style="justify-content: center; text-align: center;">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-8 col-sm-12 text-center">
+            <h1 class="display-4 mb-4">Search for a Movie</h1>
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Enter movie title" aria-label="Enter movie title" aria-describedby="searchButton" id="movieTitle">
+                <button class="btn btn-primary" type="button" id="searchButton">Search</button>
+                </div>
+        <div id="movieInfo"></div>
+    </div>
+</div>
+<div id="imageURLs"
+    data-rottentomatoes="{% static 'media/rottentomatoes.png' %}"
+    data-metacritic="{% static 'media/metacritic.png' %}"
+    data-imdb="{% static 'media/imdb.png' %}"
+    data-letterboxed="{% static 'media/letterboxed.png' %}">
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://kit.fontawesome.com/a076d05399.js"></script>
+<script>
+    $('#movieTitle').keypress(function(event) {
+        if (event.which === 13) {
+            event.preventDefault();
+            searchMovie();
+        }
+    });
+
+    $('#searchButton').on('click', function() {
+        searchMovie();
+    });
+
+    function searchMovie() {
+        var movieTitle = $('#movieTitle').val();
+        var apiUrl = 'http://www.omdbapi.com/?t=' + movieTitle + '&apikey=597d1aec';
+
+        var metacriticIcon = '<img src="{% static 'rottentomatoes.png' %}">';
+        var letterboxedIcon = '<img src="{% static 'letterboxed.png' %}">';
+
+        $.ajax({
+            url: apiUrl,
+            method: 'GET',
+            success: function(response) {
+                var title = response.Title;
+                var year = response.Year;
+                var genre = response.Genre;
+                var imdbRating = response.imdbRating;
+                var rottenTomatoes = getRating(response.Ratings, 'Rotten Tomatoes');
+                var metacritic = getRating(response.Ratings, 'Metacritic');
+                var letterboxedRating = getRating(response.Ratings, 'Letterboxed'); // This is hypothetical
+
+                var star = '<span class="star">&#9733;</span>';
+                var imageURLs = document.getElementById('imageURLs');
+                var rottenTomatoesIcon = '<img style="width: 24px; height: 24px;" src="' + imageURLs.dataset.rottentomatoes + '">';
+                var metacriticIcon = '<img style="width: 24px; height: 24px;" src="' + imageURLs.dataset.metacritic + '">';
+                var imdbIcon = '<img style="width: 24px; height: 24px;" src="' + imageURLs.dataset.imdb + '">';
+                var letterboxedIcon = '<img style="width: 24px; height: 24px;" src="' + imageURLs.dataset.letterboxed + '">';
+
+                var movieInfo = '<h2>' + title + ' (' + year + ')</h2>';
+                movieInfo += '<p>Genre: ' + genre + '</p>';
+                movieInfo += '<p>' + 'IMDb Rating: ' + imdbRating + ' ' + star + '</p>';
+                if (rottenTomatoes) {
+                    movieInfo += '<p>Rotten Tomatoes: ' + rottenTomatoes.Value + ' ' + rottenTomatoesIcon + '</p>';
+                }
+                if (metacritic) {
+                    movieInfo += '<p>Metacritic: ' + metacritic.Value + ' ' + metacriticIcon + '</p>';
+                }
+                if (letterboxedRating) {
+                    movieInfo += '<p>Letterboxed: ' + letterboxedRating.Value + ' ' + letterboxedIcon + '</p>';
+                }
+
+                $('#movieInfo').html(movieInfo);
+            },
+            error: function() {
+                $('#movieInfo').html('<p>Movie not found or an error occurred.</p>');
+            }
+        });
+    }
+
+    function getRating(ratings, source) {
+        return ratings.find(rating => rating.Source === source);
+    }
+</script>
+
+{% endblock content %}
+
